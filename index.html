@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快樂數數小火車 / Happy Counting Train</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (for JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-blue-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // SVG Icons Components
+        const Icons = {
+            Star: ({ className }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            ),
+            Settings: ({ className, size }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            ),
+            Eye: ({ className, size }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            ),
+            EyeOff: ({ className, size }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+            ),
+            Globe: ({ className, size }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            )
+        };
+
+        const translations = {
+            zh: {
+                title: "快樂數數小火車",
+                selectMode: "選擇模式",
+                modeForward: "順數 (1 2 3)",
+                modeBackward: "倒數 (3 2 1)",
+                range: "數字範圍",
+                startGame: "開始遊戲！",
+                hintToggle: "雙色提示 (十位/個位)",
+                hintDesc: "藍色是十位，紅色是個位，幫你看清楚！",
+                gameTitleForward: "順數接龍",
+                gameTitleBackward: "倒數接龍",
+                hintOn: "雙色開啟",
+                question: "車廂裡是什麼數字？",
+                streak: "連對 {n} 題！好棒！🔥",
+                correct: "答對了！",
+                wrong: "再試一次！",
+                menu: "主選單"
+            },
+            en: {
+                title: "Happy Counting Train",
+                selectMode: "Select Mode",
+                modeForward: "Forward (1 2 3)",
+                modeBackward: "Backward (3 2 1)",
+                range: "Number Range",
+                startGame: "Start Game!",
+                hintToggle: "Color Hints (Tens/Units)",
+                hintDesc: "Blue for tens, Red for units!",
+                gameTitleForward: "Forward Sequence",
+                gameTitleBackward: "Backward Sequence",
+                hintOn: "Hints On",
+                question: "What is the missing number?",
+                streak: "Streak: {n}! Great job! 🔥",
+                correct: "Correct!",
+                wrong: "Try Again!",
+                menu: "Menu"
+            }
+        };
+
+        const styles = {
+            container: "min-h-screen bg-gradient-to-b from-blue-100 to-purple-100 flex flex-col items-center justify-center p-4 font-sans select-none",
+            card: "bg-white/90 backdrop-blur-sm p-6 rounded-3xl shadow-xl w-full max-w-lg text-center border-4 border-white relative",
+            title: "text-3xl font-bold text-indigo-600 mb-6 drop-shadow-sm",
+            trainContainer: "flex items-center justify-center space-x-2 mb-8 overflow-x-auto py-4 px-2 min-h-[120px]",
+            trainCar: "relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center rounded-xl shadow-md text-2xl md:text-3xl font-bold transition-all transform duration-500",
+            filledCar: "bg-yellow-400 text-yellow-900 border-b-4 border-yellow-600",
+            emptyCar: "bg-gray-200 border-2 border-dashed border-gray-400 animate-pulse",
+            connector: "w-2 h-1 md:w-4 md:h-2 bg-gray-400 rounded-full",
+            optionsGrid: "grid grid-cols-3 gap-4 mb-6",
+            optionBtn: "py-4 rounded-2xl text-3xl font-bold transition-all transform active:scale-95 shadow-md border-2 border-b-4",
+            feedback: "fixed inset-0 flex items-center justify-center z-50 pointer-events-none",
+            feedbackText: "text-6xl md:text-8xl font-black drop-shadow-2xl animate-bounce",
+            menuBtn: "w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold text-lg shadow-[0_4px_0_rgb(67,56,202)] active:shadow-none active:translate-y-[4px] transition-all mb-3",
+            settingBtn: "px-4 py-2 rounded-lg font-bold text-sm transition-colors border-2",
+            hintToggle: "flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all",
+            langBtn: "absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors z-10",
+        };
+
+        const App = () => {
+            const [gameState, setGameState] = React.useState('menu'); 
+            const [mode, setMode] = React.useState('forward'); 
+            const [range, setRange] = React.useState(20); 
+            const [sequence, setSequence] = React.useState([]);
+            const [missingIndex, setMissingIndex] = React.useState(0);
+            const [options, setOptions] = React.useState([]);
+            const [score, setScore] = React.useState(0);
+            const [feedback, setFeedback] = React.useState(null); 
+            const [streak, setStreak] = React.useState(0);
+            const [showHints, setShowHints] = React.useState(false);
+            const [lang, setLang] = React.useState('zh');
+
+            const t = translations[lang];
+
+            const startGame = () => {
+                setScore(0);
+                setStreak(0);
+                setGameState('playing');
+                generateQuestion();
+            };
+
+            const toggleLang = () => {
+                setLang(prev => prev === 'zh' ? 'en' : 'zh');
+            };
+
+            const generateQuestion = () => {
+                let startNum, newSequence;
+                const length = 4;
+                
+                if (mode === 'forward') {
+                    const maxStart = range - length + 1;
+                    startNum = Math.floor(Math.random() * maxStart) + 1;
+                    newSequence = Array.from({ length }, (_, i) => startNum + i);
+                } else if (mode === 'backward') {
+                    const minStart = length;
+                    startNum = Math.floor(Math.random() * (range - minStart + 1)) + minStart;
+                    newSequence = Array.from({ length }, (_, i) => startNum - i);
+                } else {
+                    const isForward = Math.random() > 0.5;
+                    if (isForward) {
+                        const maxStart = range - length + 1;
+                        startNum = Math.floor(Math.random() * maxStart) + 1;
+                        newSequence = Array.from({ length }, (_, i) => startNum + i);
+                    } else {
+                        const minStart = length;
+                        startNum = Math.floor(Math.random() * (range - minStart + 1)) + minStart;
+                        newSequence = Array.from({ length }, (_, i) => startNum - i);
+                    }
+                }
+
+                const emptyIdx = Math.floor(Math.random() * length);
+                setSequence(newSequence);
+                setMissingIndex(emptyIdx);
+                generateOptions(newSequence[emptyIdx]);
+            };
+
+            const generateOptions = (correctAnswer) => {
+                const opts = new Set([correctAnswer]);
+                const tens = Math.floor(correctAnswer / 10);
+                const units = correctAnswer % 10;
+
+                const reversed = units * 10 + tens;
+                if (reversed !== correctAnswer && reversed > 0 && reversed <= 100) {
+                    opts.add(reversed);
+                }
+
+                const wrongTenMinus = correctAnswer - 10;
+                if (wrongTenMinus > 0) opts.add(wrongTenMinus);
+                
+                const wrongTenPlus = correctAnswer + 10;
+                if (wrongTenPlus <= 100) opts.add(wrongTenPlus);
+
+                while (opts.size < 3) {
+                    const strategies = [
+                        () => correctAnswer + (Math.random() > 0.5 ? 1 : -1), 
+                        () => correctAnswer + (Math.random() > 0.5 ? 2 : -2), 
+                        () => Math.floor(Math.random() * range) + 1
+                    ];
+                    
+                    const randomStrategy = strategies[Math.floor(Math.random() * strategies.length)];
+                    let wrong = randomStrategy();
+                    
+                    if (wrong > 0 && wrong <= 100 && wrong !== correctAnswer) {
+                        opts.add(wrong);
+                    }
+                }
+                
+                let optsArray = Array.from(opts);
+                if (optsArray.length > 3) {
+                    const others = optsArray.filter(n => n !== correctAnswer).sort(() => Math.random() - 0.5).slice(0, 2);
+                    optsArray = [correctAnswer, ...others];
+                }
+
+                setOptions(optsArray.sort(() => Math.random() - 0.5));
+            };
+
+            const handleAnswer = (val) => {
+                if (feedback) return; 
+
+                const correct = sequence[missingIndex];
+                if (val === correct) {
+                    setFeedback('correct');
+                    setScore(s => s + 1);
+                    setStreak(s => s + 1);
+                    setTimeout(() => {
+                        setFeedback(null);
+                        generateQuestion();
+                    }, 1500);
+                } else {
+                    setFeedback('wrong');
+                    setStreak(0);
+                    setTimeout(() => {
+                        setFeedback(null);
+                    }, 1000);
+                }
+            };
+
+            const renderNumber = (num) => {
+                if (!showHints || num < 10) return num;
+                const tens = Math.floor(num / 10);
+                const units = num % 10;
+                return (
+                    <span className="inline-flex tracking-tighter">
+                        <span className="text-blue-600">{tens}</span>
+                        <span className="text-red-500">{units}</span>
+                    </span>
+                );
+            };
+
+            const renderTrain = () => {
+                return (
+                    <div className={styles.trainContainer}>
+                        <div className="mr-2 text-4xl">🚂</div>
+                        {sequence.map((num, idx) => (
+                            <React.Fragment key={idx}>
+                                {idx > 0 && <div className={styles.connector} />}
+                                <div 
+                                    className={`${styles.trainCar} ${
+                                        idx === missingIndex && feedback !== 'correct'
+                                        ? styles.emptyCar 
+                                        : styles.filledCar
+                                    }`}
+                                >
+                                    {idx === missingIndex && feedback !== 'correct' 
+                                        ? '?' 
+                                        : renderNumber(num)
+                                    }
+                                    <div className="absolute -bottom-2 -left-1 w-4 h-4 bg-black rounded-full border-2 border-gray-500"></div>
+                                    <div className="absolute -bottom-2 -right-1 w-4 h-4 bg-black rounded-full border-2 border-gray-500"></div>
+                                </div>
+                            </React.Fragment>
+                        ))}
+                    </div>
+                );
+            };
+
+            if (gameState === 'menu') {
+                return (
+                    <div className={styles.container}>
+                        <div className={styles.card}>
+                            <button onClick={toggleLang} className={styles.langBtn}>
+                                <span className="flex items-center gap-1 font-bold text-sm text-gray-600">
+                                <Icons.Globe size={18} /> {lang === 'zh' ? 'EN' : '中'}
+                                </span>
+                            </button>
+
+                            <div className="text-6xl mb-4">🚂</div>
+                            <h1 className={styles.title}>{t.title}</h1>
+                            
+                            <div className="mb-6 space-y-4">
+                                <div>
+                                    <p className="text-gray-500 mb-2 font-bold text-lg">{t.selectMode}</p>
+                                    <div className="flex justify-center space-x-2">
+                                        <button 
+                                            onClick={() => setMode('forward')}
+                                            className={`${styles.settingBtn} ${mode === 'forward' ? 'bg-green-100 border-green-500 text-green-700' : 'border-gray-200 text-gray-400'}`}
+                                        >
+                                            {t.modeForward}
+                                        </button>
+                                        <button 
+                                            onClick={() => setMode('backward')}
+                                            className={`${styles.settingBtn} ${mode === 'backward' ? 'bg-orange-100 border-orange-500 text-orange-700' : 'border-gray-200 text-gray-400'}`}
+                                        >
+                                            {t.modeBackward}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-gray-500 mb-2 font-bold text-lg">{t.range}</p>
+                                    <div className="flex justify-center space-x-2">
+                                        {[20, 50, 100].map(r => (
+                                            <button 
+                                                key={r}
+                                                onClick={() => setRange(r)}
+                                                className={`${styles.settingBtn} ${range === r ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-gray-200 text-gray-400'}`}
+                                            >
+                                                1 - {r}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-center mt-4">
+                                    <button 
+                                        onClick={() => setShowHints(!showHints)}
+                                        className={`${styles.hintToggle} ${showHints ? 'bg-indigo-100 border-indigo-500 text-indigo-700' : 'bg-gray-50 border-gray-300 text-gray-400'}`}
+                                    >
+                                        {showHints ? <Icons.Eye size={20} /> : <Icons.EyeOff size={20} />}
+                                        <span className="font-bold">{t.hintToggle}</span>
+                                    </button>
+                                </div>
+                                {showHints && <p className="text-xs text-indigo-400">{t.hintDesc}</p>}
+
+                            </div>
+
+                            <button onClick={startGame} className={`${styles.menuBtn} bg-green-500 hover:bg-green-600 shadow-[0_4px_0_rgb(21,128,61)] text-2xl py-4`}>
+                                {t.startGame}
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className={styles.container}>
+                    <div className="w-full max-w-lg flex justify-between items-center mb-4 px-4">
+                        <button onClick={() => setGameState('menu')} className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-50 text-gray-500 flex items-center gap-1 font-bold">
+                            <Icons.Settings size={24} /> {t.menu}
+                        </button>
+                        
+                        <div className="flex items-center space-x-2 bg-yellow-100 px-4 py-2 rounded-full border-2 border-yellow-300">
+                            <Icons.Star className="text-yellow-500 fill-yellow-500" />
+                            <span className="font-bold text-yellow-800 text-xl">{score}</span>
+                        </div>
+                        
+                        <button onClick={toggleLang} className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-50 text-gray-500">
+                            <span className="font-bold text-sm">{lang === 'zh' ? 'EN' : '中'}</span>
+                        </button>
+                    </div>
+
+                    <div className={styles.card}>
+                        <div className="mb-2 text-gray-400 font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2">
+                            {mode === 'forward' ? t.gameTitleForward : t.gameTitleBackward} (1-{range})
+                            {showHints && <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 text-xs rounded-full">{t.hintOn}</span>}
+                        </div>
+
+                        <div className="bg-blue-50 rounded-2xl p-2 mb-6 border-2 border-blue-100 overflow-hidden">
+                            {renderTrain()}
+                        </div>
+
+                        <p className="text-lg text-gray-600 mb-4 font-bold">
+                            {t.question}
+                        </p>
+
+                        <div className={styles.optionsGrid}>
+                            {options.map((opt, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => handleAnswer(opt)}
+                                    className={`${styles.optionBtn} 
+                                        bg-white hover:bg-orange-50 text-indigo-900 border-indigo-200 hover:border-orange-300
+                                    `}
+                                >
+                                    {renderNumber(opt)}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex justify-center items-center space-x-1 text-sm text-gray-400 h-6">
+                            {streak > 2 && <span className="text-orange-500 font-bold animate-pulse">{t.streak.replace('{n}', streak)}</span>}
+                        </div>
+                    </div>
+
+                    {feedback === 'correct' && (
+                        <div className={styles.feedback}>
+                            <div className="bg-white/90 p-8 rounded-3xl shadow-2xl flex flex-col items-center animate-bounce">
+                                <div className="text-8xl mb-4">🌟</div>
+                                <span className="text-green-500 text-4xl font-black">{t.correct}</span>
+                            </div>
+                            <div className="absolute inset-0 overflow-hidden pointer-events-none flex justify-center">
+                                <div className="animate-[ping_1s_ease-out_infinite] absolute top-1/4 left-1/4 text-4xl">🎉</div>
+                                <div className="animate-[ping_1.5s_ease-out_infinite] absolute top-1/3 right-1/4 text-4xl">🎈</div>
+                                <div className="animate-[ping_0.8s_ease-out_infinite] absolute bottom-1/3 left-1/3 text-4xl">✨</div>
+                            </div>
+                        </div>
+                    )}
+
+                    {feedback === 'wrong' && (
+                        <div className={styles.feedback}>
+                                <div className="bg-white/90 p-8 rounded-3xl shadow-2xl flex flex-col items-center animate-shake">
+                                <div className="text-8xl mb-4">🤔</div>
+                                <span className="text-orange-500 text-4xl font-black">{t.wrong}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
