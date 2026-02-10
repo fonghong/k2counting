@@ -25,6 +25,24 @@
         .animate-shake {
             animation: shake 0.4s ease-in-out;
         }
+
+        /* 修復 iPad/手機上 hover 顏色卡住的問題 
+           只有支援滑鼠懸停的裝置 (desktop) 才會變色
+        */
+        @media (hover: hover) {
+            .btn-interactive:hover {
+                background-color: #fff7ed !important; /* orange-50 */
+                border-color: #fdba74 !important; /* orange-300 */
+                transform: translateY(-2px);
+            }
+        }
+        
+        /* 觸控裝置主要靠這個 active 狀態獲得回饋 (按下瞬間變深色)
+        */
+        .btn-interactive:active {
+            background-color: #ffedd5 !important; /* orange-100 */
+            border-color: #fb923c !important; /* orange-400 */
+        }
     </style>
 </head>
 <body class="bg-blue-100">
@@ -57,7 +75,6 @@
         };
 
         // --- Sound Engine (Web Audio API) ---
-        // 這部分負責製造聲音，不依賴外部檔案
         const soundEngine = {
             ctx: null,
             bgmInterval: null,
@@ -108,7 +125,6 @@
                 this.playTone(800, 'triangle', 0.05, 0, 0.05);
             },
 
-            // 簡單的背景音樂循環 (小星星變奏)
             startBGM: function() {
                 if (this.bgmInterval) return;
                 this.init();
@@ -124,14 +140,11 @@
                 
                 const playNextNote = () => {
                     if (this.isMuted) return;
-                    // 使用 triangle 波形比較像長笛/電子琴，聲音柔和
                     const freq = melody[noteIndex % melody.length];
-                    // 隨機一點點變化讓它不那麼單調
                     this.playTone(freq, 'triangle', 0.3, 0, 0.03); 
                     noteIndex++;
                 };
 
-                // 每 400ms 播放一個音符
                 this.bgmInterval = setInterval(playNextNote, 400);
             },
 
@@ -202,6 +215,7 @@
             emptyCar: "bg-gray-200 border-2 border-dashed border-gray-400 animate-pulse",
             connector: "w-2 h-1 md:w-4 md:h-2 bg-gray-400 rounded-full",
             optionsGrid: "grid grid-cols-3 gap-4 mb-6",
+            // Remove Tailwind hover: props from here, rely on btn-interactive class
             optionBtn: "py-4 rounded-2xl text-3xl font-bold transition-all transform active:scale-95 shadow-md border-2 border-b-4",
             feedback: "fixed inset-0 flex items-center justify-center z-50 pointer-events-none",
             feedbackText: "text-6xl md:text-8xl font-black drop-shadow-2xl animate-bounce",
@@ -228,7 +242,6 @@
 
             const t = translations[lang];
 
-            // 確保音樂在組件卸載時停止
             React.useEffect(() => {
                 return () => {
                     soundEngine.stopBGM();
@@ -242,7 +255,7 @@
             };
 
             const startGame = () => {
-                soundEngine.init(); // 必須在用戶交互時初始化 AudioContext
+                soundEngine.init(); 
                 if (musicEnabled) {
                     soundEngine.startBGM();
                 }
@@ -338,7 +351,7 @@
                     setFeedback('correct');
                     setScore(s => s + 1);
                     setStreak(s => s + 1);
-                    soundEngine.playCorrect(); // 播放正確音效
+                    soundEngine.playCorrect(); 
                     
                     setTimeout(() => {
                         setFeedback(null);
@@ -347,7 +360,7 @@
                 } else {
                     setFeedback('wrong');
                     setStreak(0);
-                    soundEngine.playWrong(); // 播放錯誤音效
+                    soundEngine.playWrong(); 
                     
                     setTimeout(() => {
                         setFeedback(null);
@@ -522,7 +535,7 @@
                                     key={i}
                                     onClick={() => handleAnswer(opt)}
                                     className={`${styles.optionBtn} 
-                                        bg-white hover:bg-orange-50 text-indigo-900 border-indigo-200 hover:border-orange-300
+                                        bg-white text-indigo-900 border-indigo-200 btn-interactive
                                     `}
                                 >
                                     {renderNumber(opt)}
