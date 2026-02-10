@@ -26,9 +26,16 @@
             animation: shake 0.4s ease-in-out;
         }
 
-        /* 修復 iPad/手機上 hover 顏色卡住的問題 
-           只有支援滑鼠懸停的裝置 (desktop) 才會變色
-        */
+        /* 虛線轉動動畫 */
+        @keyframes marching-ants {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -32; } /* 調整這個數值控制速度感 */
+        }
+        .animate-dash {
+            animation: marching-ants 1.5s linear infinite;
+        }
+
+        /* 修復 iPad/手機上 hover 顏色卡住的問題 */
         @media (hover: hover) {
             .btn-interactive:hover {
                 background-color: #fff7ed !important; /* orange-50 */
@@ -36,9 +43,6 @@
                 transform: translateY(-2px);
             }
         }
-        
-        /* 觸控裝置主要靠這個 active 狀態獲得回饋 (按下瞬間變深色)
-        */
         .btn-interactive:active {
             background-color: #ffedd5 !important; /* orange-100 */
             border-color: #fb923c !important; /* orange-400 */
@@ -212,10 +216,9 @@
             trainContainer: "flex items-center justify-center space-x-2 mb-8 overflow-x-auto py-4 px-2 min-h-[120px]",
             trainCar: "relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center rounded-xl shadow-md text-2xl md:text-3xl font-bold transition-all transform duration-500",
             filledCar: "bg-yellow-400 text-yellow-900 border-b-4 border-yellow-600",
-            emptyCar: "bg-gray-200 border-2 border-dashed border-gray-400 animate-pulse",
+            // 移除了舊的 emptyCar 邊框，改用 SVG
             connector: "w-2 h-1 md:w-4 md:h-2 bg-gray-400 rounded-full",
             optionsGrid: "grid grid-cols-3 gap-4 mb-6",
-            // Remove Tailwind hover: props from here, rely on btn-interactive class
             optionBtn: "py-4 rounded-2xl text-3xl font-bold transition-all transform active:scale-95 shadow-md border-2 border-b-4",
             feedback: "fixed inset-0 flex items-center justify-center z-50 pointer-events-none",
             feedbackText: "text-6xl md:text-8xl font-black drop-shadow-2xl animate-bounce",
@@ -384,25 +387,46 @@
                 return (
                     <div className={styles.trainContainer}>
                         <div className="mr-2 text-4xl">🚂</div>
-                        {sequence.map((num, idx) => (
-                            <React.Fragment key={idx}>
-                                {idx > 0 && <div className={styles.connector} />}
-                                <div 
-                                    className={`${styles.trainCar} ${
-                                        idx === missingIndex && feedback !== 'correct'
-                                        ? styles.emptyCar 
-                                        : styles.filledCar
-                                    }`}
-                                >
-                                    {idx === missingIndex && feedback !== 'correct' 
-                                        ? '?' 
-                                        : renderNumber(num)
-                                    }
-                                    <div className="absolute -bottom-2 -left-1 w-4 h-4 bg-black rounded-full border-2 border-gray-500"></div>
-                                    <div className="absolute -bottom-2 -right-1 w-4 h-4 bg-black rounded-full border-2 border-gray-500"></div>
-                                </div>
-                            </React.Fragment>
-                        ))}
+                        {sequence.map((num, idx) => {
+                            const isMissing = idx === missingIndex && feedback !== 'correct';
+                            return (
+                                <React.Fragment key={idx}>
+                                    {idx > 0 && <div className={styles.connector} />}
+                                    <div 
+                                        className={`${styles.trainCar} ${
+                                            isMissing
+                                            ? 'bg-blue-50 text-indigo-400' 
+                                            : styles.filledCar
+                                        }`}
+                                    >
+                                        {isMissing && (
+                                            <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-xl overflow-visible">
+                                                <rect 
+                                                    x="2" y="2" 
+                                                    width="calc(100% - 4px)" 
+                                                    height="calc(100% - 4px)" 
+                                                    rx="10" 
+                                                    fill="none" 
+                                                    stroke="#6366f1" /* indigo-500 */
+                                                    strokeWidth="4" 
+                                                    strokeDasharray="12 8" 
+                                                    strokeLinecap="round"
+                                                    className="animate-dash" 
+                                                />
+                                            </svg>
+                                        )}
+                                        
+                                        {isMissing 
+                                            ? <span className="animate-bounce">?</span>
+                                            : renderNumber(num)
+                                        }
+
+                                        <div className="absolute -bottom-2 -left-1 w-4 h-4 bg-black rounded-full border-2 border-gray-500"></div>
+                                        <div className="absolute -bottom-2 -right-1 w-4 h-4 bg-black rounded-full border-2 border-gray-500"></div>
+                                    </div>
+                                </React.Fragment>
+                            );
+                        })}
                     </div>
                 );
             };
