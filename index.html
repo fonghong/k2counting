@@ -29,7 +29,7 @@
         /* 虛線轉動動畫 */
         @keyframes marching-ants {
             0% { stroke-dashoffset: 0; }
-            100% { stroke-dashoffset: -32; } /* 調整這個數值控制速度感 */
+            100% { stroke-dashoffset: -32; } 
         }
         .animate-dash {
             animation: marching-ants 1.5s linear infinite;
@@ -78,7 +78,7 @@
             )
         };
 
-        // --- Sound Engine (Web Audio API) ---
+        // --- Sound Engine (Web Audio API) - Enhanced Stability ---
         const soundEngine = {
             ctx: null,
             bgmInterval: null,
@@ -86,32 +86,60 @@
             
             init: function() {
                 if (!this.ctx) {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                    
+                    // 自動播放策略解鎖：監聽第一次互動
+                    const unlock = () => {
+                        if (this.ctx.state === 'suspended') {
+                            this.ctx.resume();
+                        }
+                        // 移除監聽器，避免重複執行
+                        document.body.removeEventListener('touchstart', unlock);
+                        document.body.removeEventListener('click', unlock);
+                        document.body.removeEventListener('keydown', unlock);
+                    };
+                    
+                    document.body.addEventListener('touchstart', unlock, { passive: true });
+                    document.body.addEventListener('click', unlock);
+                    document.body.addEventListener('keydown', unlock);
                 }
-                if (this.ctx.state === 'suspended') {
-                    this.ctx.resume();
+                
+                // 雙重保險：如果已經初始化但處於暫停狀態，嘗試恢復
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume().catch(e => console.log("Audio resume failed:", e));
                 }
             },
 
             playTone: function(freq, type, duration, startTime = 0, volume = 0.1) {
+                // 如果環境不存在或靜音，不播放
                 if (!this.ctx || this.isMuted) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = type;
-                osc.frequency.setValueAtTime(freq, this.ctx.currentTime + startTime);
                 
-                gain.gain.setValueAtTime(volume, this.ctx.currentTime + startTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + startTime + duration);
-                
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(this.ctx.currentTime + startTime);
-                osc.stop(this.ctx.currentTime + startTime + duration);
+                // 再次檢查：如果瀏覽器把音效停掉了（例如切換分頁後），嘗試喚醒
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume().catch(() => {});
+                }
+
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + startTime);
+                    
+                    gain.gain.setValueAtTime(volume, this.ctx.currentTime + startTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + startTime + duration);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + startTime);
+                    osc.stop(this.ctx.currentTime + startTime + duration);
+                } catch (e) {
+                    console.error("Audio play error:", e);
+                }
             },
 
             playCorrect: function() {
                 this.init();
-                // 叮叮！(C5 - E5 - G5)
                 this.playTone(523.25, 'sine', 0.1, 0, 0.2); // C5
                 this.playTone(659.25, 'sine', 0.1, 0.1, 0.2); // E5
                 this.playTone(783.99, 'sine', 0.4, 0.2, 0.2); // G5
@@ -119,7 +147,6 @@
 
             playWrong: function() {
                 this.init();
-                // 噗～ (Sawtooth wave low pitch)
                 this.playTone(150, 'sawtooth', 0.3, 0, 0.15);
                 this.playTone(100, 'sawtooth', 0.3, 0.1, 0.15);
             },
@@ -130,7 +157,9 @@
             },
 
             startBGM: function() {
+                // 如果已經在播放，先不要重複啟動
                 if (this.bgmInterval) return;
+                
                 this.init();
                 
                 let noteIndex = 0;
@@ -144,6 +173,13 @@
                 
                 const playNextNote = () => {
                     if (this.isMuted) return;
+                    
+                    // 關鍵修復：每次播放音符前，檢查並喚醒 AudioContext
+                    // 這是解決「切換分頁後無聲」的關鍵
+                    if (this.ctx && this.ctx.state === 'suspended') {
+                        this.ctx.resume().catch(() => {});
+                    }
+
                     const freq = melody[noteIndex % melody.length];
                     this.playTone(freq, 'triangle', 0.3, 0, 0.03); 
                     noteIndex++;
@@ -216,10 +252,9 @@
             trainContainer: "flex items-center justify-center space-x-2 mb-8 overflow-x-auto py-4 px-2 min-h-[120px]",
             trainCar: "relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center rounded-xl shadow-md text-2xl md:text-3xl font-bold transition-all transform duration-500",
             filledCar: "bg-yellow-400 text-yellow-900 border-b-4 border-yellow-600",
-            // 移除了舊的 emptyCar 邊框，改用 SVG
             connector: "w-2 h-1 md:w-4 md:h-2 bg-gray-400 rounded-full",
             optionsGrid: "grid grid-cols-3 gap-4 mb-6",
-            optionBtn: "py-4 rounded-2xl text-3xl font-bold transition-all transform active:scale-95 shadow-md border-2 border-b-4",
+            optionBtn: "py-4 rounded-2xl text-3xl font-bold transition-all transform active:scale-95 shadow-md border-2 border-b-4 btn-interactive",
             feedback: "fixed inset-0 flex items-center justify-center z-50 pointer-events-none",
             feedbackText: "text-6xl md:text-8xl font-black drop-shadow-2xl animate-bounce",
             menuBtn: "w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold text-lg shadow-[0_4px_0_rgb(67,56,202)] active:shadow-none active:translate-y-[4px] transition-all mb-3",
@@ -245,11 +280,41 @@
 
             const t = translations[lang];
 
+            // 監聽頁面可見性變化 (Visibility Change)
+            // 當用戶切換回來時，如果音樂原本是開的，就強制重啟
             React.useEffect(() => {
+                const handleVisibilityChange = () => {
+                    if (!document.hidden) {
+                        // 頁面變為可見
+                        if (musicEnabled && !soundEngine.isMuted) {
+                            soundEngine.init();
+                            soundEngine.startBGM();
+                        }
+                    } else {
+                        // 頁面隱藏 (省電)
+                        soundEngine.stopBGM();
+                    }
+                };
+
+                document.addEventListener("visibilitychange", handleVisibilityChange);
+                
+                // 也要監聽用戶點擊，作為第一次載入的觸發
+                const handleInteraction = () => {
+                    if (musicEnabled && !soundEngine.isMuted) {
+                        soundEngine.init();
+                        // 注意：這裡不強制 startBGM，避免在 Menu 頁面突然開始播放
+                        // 除非已經在遊戲中，這部分由 soundEngine 內部狀態管理比較複雜
+                        // 最簡單的是依靠 startBGM 裡的 resume 檢查
+                    }
+                };
+                document.addEventListener("click", handleInteraction, { once: true });
+
                 return () => {
+                    document.removeEventListener("visibilitychange", handleVisibilityChange);
+                    document.removeEventListener("click", handleInteraction);
                     soundEngine.stopBGM();
                 };
-            }, []);
+            }, [musicEnabled]);
 
             const toggleMusic = () => {
                 const muted = soundEngine.toggleMute();
